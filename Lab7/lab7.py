@@ -6,7 +6,7 @@ import numpy as np
 
 
 width = 1000
-heigth = 700
+height = 700
 
 pg.init()
 
@@ -14,7 +14,7 @@ balls_number = 5
 FPS = 60
 g = 500                     #gravity force acceleration
 coll_loss = 0               #energy loss via collisions, must be >= 0
-screen = pg.display.set_mode([width, heigth])
+screen = pg.display.set_mode([width, height])
 
 
 RED = (255, 0, 0)
@@ -35,6 +35,8 @@ class Ball:
         self.rad = rad
         self.color = color
         self.cost = cost
+    def __del__(self):
+        pass
     def caught(self, x, y):
         return (self.rad ** 2) >= ((self.coord[0] - x) ** 2 + (self.coord[1] - y) ** 2)                                                                     #is it caugt?
     def move(self):                                                                                                                                         #iterate movement
@@ -104,6 +106,7 @@ while not finished:
             for i in range(len(balls)):
                 if balls[i].caught(x, y) == True: 
                     score += balls[i].cost
+                    del balls[i]
                     balls[i] = new_ball(0.1, 5, 10)
         
     screen.fill(BLACK) 
@@ -118,7 +121,7 @@ while not finished:
 
 
     for i in range(len(balls)):
-        balls[i].wall_collide([0, width], [0, heigth])
+        balls[i].wall_collide([0, width], [0, height])
         if balls[i].cost > 1:
             balls[i].color = COLORS[randint(0, 5)]
             if change:
@@ -128,7 +131,7 @@ while not finished:
         balls[i].vel[1] += g * (1 / FPS)                                    # moving and drawing balls
 
     if score == 0:
-        screen.blit(label2, [width / 2 - 340, heigth / 2 - 50])
+        screen.blit(label2, [width / 2 - 340, height / 2 - 50])
     
     label = font.render(f"SCORE: {score}", True, "WHITE")
     screen.blit(label, [10, 0])
