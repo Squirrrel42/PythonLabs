@@ -106,7 +106,6 @@ while not finished:
             for i in range(len(balls)):
                 if balls[i].caught(x, y) == True: 
                     score += balls[i].cost
-                    del balls[i]
                     balls[i] = new_ball(0.1, 5, 10)
         
     screen.fill(BLACK) 
