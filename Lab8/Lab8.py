@@ -8,10 +8,15 @@ FPS = 60
 g = 500
 PROJECTILES = []
 TARGETS = []
-ap_mass = 0.1
-ap_len = 0.5
+AMMO = ["AP", "RCT"]
+ap_len = 0.3
+rct_len = 0.5
 tank_size = 20
 targets_number = 2
+ap_mass = 1
+rct_mass = 5
+rct_F = 5000
+rct_mu = 1
 
 def rotate(vec, a):
     return np.dot(vec, [[np.cos(a), np.sin(a)], [-np.sin(a), np.cos(a)]])
@@ -27,20 +32,54 @@ def new_target():
 
 class Shell:
     def __init__(self, coord, impulse, ammo_type):
-        self.type = ammo_type
-        self.coord = np.array(coord)
-        self.tracer = []
+        self.ammo_type = ammo_type
+
         if ammo_type == "AP":
-            self.vel = np.array(impulse) / ap_mass
+            self.mass = ap_mass
+        elif ammo_type == "RCT":
+            self.mass = rct_mass
+        if self.ammo_type == "AP":
+            self.tr_len = ap_len
+        elif self.ammo_type == "RCT":
+            self.tr_len = rct_len
+
+        self.coord = np.array(coord)
+        self.tracer = [list(self.coord), list(self.coord), list(self.coord)]
+        self.vel = np.array(impulse) / self.mass
     def __del__(self):
         pass
     def move(self, g):
         self.coord += self.vel / FPS
         self.vel += np.array([0, g]) / FPS
-        self.tracer.append(list(self.coord))
-        if len(self.tracer) > FPS * ap_len:
-            del self.tracer[0]
-        return(self.coord)
+        if self.ammo_type == "AP":
+            self.tracer.append(list(self.coord))
+            if len(self.tracer) > FPS * ap_len:
+                del self.tracer[0]
+        elif self.ammo_type == "RCT":
+            if self.mass >= 0.3 * rct_mass:
+                self.mass -= rct_mass * rct_mu / FPS
+                self.vel += (self.vel / mag(self.vel)) * rct_F / self.mass / FPS
+                self.tracer.append(list(self.coord))
+            if (len(self.tracer) > FPS * ap_len or self.mass < rct_mass * 0.3) and len(self.tracer) > 0:
+                del self.tracer[0]
+    def draw(self, surface):
+        for i in range(len(self.tracer) - 1):
+            if len(self.tracer) > 3:
+                if self.ammo_type == "AP":
+                    br = 10 + int(50 * (i) / self.tr_len / FPS)
+                    color = "#" + str(br * 10101)   
+                    pg.draw.line(surface, color, self.tracer[i], self.tracer[i+1], 1)
+                elif self.ammo_type == "RCT":
+                    br = 10 + int(50 * (i) / self.tr_len / FPS)
+                    color = "#" + str(br * 10101)   
+                    pg.draw.line(surface, color, self.tracer[i], self.tracer[i+1], int((1 - i / len(self.tracer)) * 10 + 3))
+        if self.ammo_type == "AP":
+            pg.draw.circle(surface, "YELLOW", self.coord, 1)
+        elif self.ammo_type == "RCT":
+            if self.mass >= rct_mass * 0.3:
+                pg.draw.line(surface, "ORANGE", self.tracer[-1], self.tracer[-2], width=2)
+            pg.draw.line(surface, "GREEN", self.coord, self.coord + (self.vel / mag(self.vel) * 1), width=6)
+            pg.draw.line(surface, "GREY", self.coord, self.coord + (self.vel / mag(self.vel) * 10), width=2)
 
 class Tank:
     def __init__(self, x, spd, ang, impulse):
@@ -100,6 +139,8 @@ clock = pg.time.Clock()
 finished = False
 score = 0
 
+ammo_n = 0
+
 for i in range(targets_number):
     TARGETS.append(new_target())
 while not finished:
@@ -111,12 +152,19 @@ while not finished:
             finished = True
         if event.type == pg.KEYDOWN:
             shooting = (event.key == pg.K_SPACE)
+            if event.key == pg.K_TAB:
+                if ammo_n < len(AMMO) - 1:
+                    ammo_n += 1
+                else:
+                    ammo_n = 0
+    ammo_type = AMMO[ammo_n]
 
     keys = pg.key.get_pressed()
     if keys[pg.K_d]:
         tank.move(1)
     elif keys[pg.K_a]:
         tank.move(-1)
+    
     
     x, y = pg.mouse.get_pos()
     if (x - tank.x) == 0:
@@ -127,7 +175,7 @@ while not finished:
         tank.ang = np.pi + np.arctan((y - (height - tank_size * 0.6)) / (x - tank.x))
 
     if shooting:
-        tank.shoot("AP")
+        tank.shoot(ammo_type)
 
     for i in range(len(TARGETS)):
         target = TARGETS[i]
@@ -139,17 +187,19 @@ while not finished:
 
     for shell in PROJECTILES:
         shell.move(g)
-        if len(shell.tracer) > 3:
-            for i in range(len(shell.tracer) - 1):
-                br = 10 + int(50 * (i) / ap_len / FPS)
-                color = "#" + str(br * 10101)
-                pg.draw.line(screen, color, shell.tracer[i], shell.tracer[i+1])
-        pg.draw.circle(screen, "YELLOW", shell.coord, 1)
-        if shell.tracer[0][1] > height:
+        shell.draw(screen)
+        if len(shell.tracer) == 0:
+            if shell.coord[1] > height:
+                PROJECTILES.remove(shell)
+                del shell
+        elif shell.tracer[0][1] > height:
             PROJECTILES.remove(shell)
             del shell
-    label = font.render(f"SCORE: {score}", True, "RED")
-    screen.blit(label, [20, 20])
+        
+    label1 = font.render(f"SCORE: {score}", True, "RED")
+    label2 = font.render(f"AMMO: {ammo_type}", True, "RED")
+    screen.blit(label1, [20, 20])
+    screen.blit(label2, [width - 200, 20])
 
     tank.draw(screen)
     pg.display.update()
