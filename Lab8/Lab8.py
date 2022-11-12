@@ -6,7 +6,7 @@ pg.init()
 font = pg.font.SysFont("comicsansms", 30)
 startfont = pg.font.SysFont("comicsansms", 20)
 font_large = pg.font.SysFont("comicsansms", 60)
-label10 = font_large.render("Welcome to PyCannon!", True, "WHITE")
+label10 = font_large.render("Welcome to MyCannon!", True, "WHITE")
 label11 = "You are to control a tank being attacked by enemy helicopters.\n"\
 "\n"\
 "Use keys A and D to move\n"\
@@ -14,7 +14,7 @@ label11 = "You are to control a tank being attacked by enemy helicopters.\n"\
 "You can DETONATE some of your projectiles remotly by pressing RMB.\n"\
 "Press TAB to switch ammo type.\n"\
 "\n"\
-"AP - a high-speed armor-piercing shell. Can destroy up to 2 helicopters.\n"\
+"AP - a high-speed armor-iercing shell. Can destroy up to 2 helicopters.\n"\
 "HE - a high explosive shell. Can be detonated remotely.\n"\
 "RCT - a heavy high explosive rocket. Creates a massive explosion when detonated.\n "\
 "FIRING A ROCKET COSTS A SCORE POINT!\n"\
@@ -456,7 +456,7 @@ while not finished:
                 started = True
         screen.fill("BLACK")
         screen.blit(label10, [260, 20])
-        blit_text(screen, label11, (200, 100), startfont)
+        blit_text(screen, label11, (200, 120), startfont)
         pg.display.update()
     tank_hits = 0
     diff()
