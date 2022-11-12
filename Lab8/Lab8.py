@@ -2,6 +2,34 @@ import pygame as pg
 import numpy as np
 from random import randint, random
 
+pg.init()
+font = pg.font.SysFont("comicsansms", 30)
+startfont = pg.font.SysFont("comicsansms", 20)
+font_large = pg.font.SysFont("comicsansms", 60)
+label10 = font_large.render("Welcome to PyCannon!", True, "WHITE")
+label11 = "You are to control a tank being attacked by enemy helicopters.\n"\
+"\n"\
+"Use keys A and D to move\n"\
+"CHARGE the cannon by holding LMB. Release it to fire.\n"\
+"You can DETONATE some of your projectiles remotly by pressing RMB.\n"\
+"Press TAB to switch ammo type.\n"\
+"\n"\
+"AP - a high-speed armor-piercing shell. Can destroy up to 2 helicopters.\n"\
+"HE - a high explosive shell. Can be detonated remotely.\n"\
+"RCT - a heavy high explosive rocket. Creates a massive explosion when detonated.\n "\
+"FIRING A ROCKET COSTS A SCORE POINT!\n"\
+"You can create a PULSE destroying all nearby projectiles by pressing SPACE.\n"\
+"\n"\
+"There are two types of helicopters: RED and YELLOW\n"\
+"RED ones can fire bombs to your current location\n"\
+"YELLOW ones also take your movement into account.\n"\
+"Destroying a helicopter gives you a SCORE point.\n"\
+"The more SCORE points you have, the harder is the game.\n"\
+"\n"\
+"Any projectile you catch kills you, no matter what fired it. Have fun :)\n"\
+"\n"\
+"PRESS ANY KEY TO CONTINUE."
+
 width = 1200
 height = 800
 FPS = 60
@@ -12,7 +40,7 @@ TARGETS = []
 PULSES = []
 AMMO = ["AP", "HE", "RCT"]
 FLASH_LABELS = []
-SCORE = 50
+SCORE = 0
 DIFF = 1
 load_time = 0.5
 charge_time = 1
@@ -34,6 +62,23 @@ rct_len = 0.5
 
 bmb_mass = 1
 bmb_len = 0.1
+
+def blit_text(surface, text, pos, font, color="WHITE"):
+    words = [word.split(' ') for word in text.splitlines()]  # 2D array where each row is a list of words.
+    space = font.size(' ')[0]  # The width of a space.
+    max_width, max_height = surface.get_size()
+    x, y = pos
+    for line in words:
+        for word in line:
+            word_surface = font.render(word, True, color)
+            word_width, word_height = word_surface.get_size()
+            if x + word_width >= max_width:
+                x = pos[0]  # Reset the x.
+                y += word_height  # Start on new row.
+            surface.blit(word_surface, (x, y))
+            x += word_width + space
+        x = pos[0]  # Reset the x.
+        y += word_height  # Start on new row.
 
 def diff():
     global SCORE
@@ -383,9 +428,6 @@ class Pulse:
 
 tank = Tank(10, 100, 0, 1000)
 
-pg.init()
-font = pg.font.SysFont("comicsansms", 30)
-font_large = pg.font.SysFont("comicsansms", 60)
 screen = pg.display.set_mode([width, height])
 game_surface = pg.surface.Surface([width, height])
 ammo_surface = pg.surface.Surface([width / 8, 60])
@@ -403,8 +445,19 @@ pulse_load = 1
 charging = False
 PULSES.append(Pulse(750, tank.coord))
 pg.mouse.set_visible(False)
-
+started = False
 while not finished:
+    while not started:
+        clock.tick(FPS)
+        for event in pg.event.get():                               
+            if event.type == pg.QUIT:
+                finished = True
+            if event.type == pg.KEYDOWN or event.type == pg.MOUSEBUTTONDOWN:
+                started = True
+        screen.fill("BLACK")
+        screen.blit(label10, [260, 20])
+        blit_text(screen, label11, (200, 100), startfont)
+        pg.display.update()
     tank_hits = 0
     diff()
     while len(TARGETS) < targets_number:
@@ -421,7 +474,7 @@ while not finished:
             left, middle, right = pg.mouse.get_pressed()
             if right:
                 detonating = True
-            if left:
+            elif left:
                 charge = 0
                 charging = True   
         if event.type == pg.MOUSEBUTTONUP:
@@ -565,12 +618,18 @@ while not finished:
     for label in FLASH_LABELS:
         label.show()
 
+    scorecolor = "GREEN"
     if (SCORE == 0) and (ammo_type == "RCT"):
         loadcolor = "RED"
+        scorecolor = "RED"
+    elif load < 1 and (ammo_type == "RCT"):
+        loadcolor = "ORANGE"
+        scorecolor = "ORANGE"
     elif load < 1:
         loadcolor = "ORANGE"
     else:
         loadcolor = "GREEN"
+
 
     if charge < 1:
         r_charge = int((1 - charge) * 255)
@@ -593,8 +652,9 @@ while not finished:
         pulsecolor = "RED"
         chargecolor = "RED"
         loadcolor = "RED"
+        scorecolor = "RED"
 
-    label1 = font.render(f"SCORE: {SCORE}", True, loadcolor)
+    label1 = font.render(f"SCORE: {SCORE}", True, scorecolor)
     label2 = font.render(f"AMMO: {ammo_type}", True, loadcolor)
     screen.blit(label1, [20, 20])
     screen.blit(label2, [width - 190, 20])
@@ -749,6 +809,8 @@ while not finished:
     if timer >= 2:
         score_label = font_large.render(f"YOUR FINAL SCORE: {SCORE}", True, "RED")
         screen.blit(score_label, [width / 2 - (330 + 17 * (len(str(SCORE))) - 1), height / 2 + 50])
+        quit_label = startfont.render("PRESS ANY KEY TO QUIT", True, "RED")
+        screen.blit(quit_label, [width / 2 - 140, height / 2 + 250])
     
     pg.display.update()
 
