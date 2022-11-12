@@ -12,7 +12,7 @@ TARGETS = []
 PULSES = []
 AMMO = ["AP", "HE", "RCT"]
 FLASH_LABELS = []
-SCORE = 0
+SCORE = 50
 DIFF = 1
 load_time = 0.5
 charge_time = 1
@@ -274,7 +274,7 @@ class Target:
                 self.shooting = False
                 self.spawned = False
             else:
-                self.shooting = (0 == randint(0, 2))
+                self.shooting = prob(1 / 3 + (DIFF - 1) / 12)
             self.dest = np.array([randint(50, width - 50), randint(100, height - 100)])
             self.timer += 1 / FPS
         elif self.timer < self.wait / 3:
