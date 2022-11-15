@@ -30,6 +30,9 @@ COLORS = [RED, BLUE, YELLOW, GREEN, MAGENTA, CYAN]
 
 class Ball:
     def __init__(self, coord, vel, rad, color, cost):
+        self.a = rad
+        self.b = rad
+        self.timer = 0
         self.coord = coord
         self.vel = vel
         self.rad = rad
@@ -41,19 +44,28 @@ class Ball:
         return (self.rad ** 2) >= ((self.coord[0] - x) ** 2 + (self.coord[1] - y) ** 2)                                                                     #is it caugt?
     def move(self):                                                                                                                                         #iterate movement
         self.coord = self.coord + self.vel * (1 / FPS)
+        self.a = self.rad * (1 + 0.2 * np.sin(self.timer * 60)) ** (1 / (self.timer + 1) ** 3)
+        self.b = self.rad * (1 - 0.2 * np.sin(self.timer * 60)) ** (1 / (self.timer + 1) ** 3)
+        self.timer += 1 / FPS
     def wall_collide(self, wall_x, wall_y):                                                                                                                 #calculate wall collisions
         if   (((self.coord[0] - self.rad) < wall_x[0]) and (self.vel[0] < 0)) or (((self.coord[0] + self.rad) > wall_x[1]) and (self.vel[0] > 0)):
             self.vel[0] = - self.vel[0] * np.sqrt(1 - coll_loss)
+            self.timer = 0
         elif (((self.coord[1] - self.rad) < wall_y[0]) and (self.vel[1] < 0)) or (((self.coord[1] + self.rad) > wall_y[1]) and (self.vel[1] > 0)):
             self.vel[1] = - self.vel[1] * np.sqrt(1 - coll_loss)
+            self.timer = 0
     def chdir(self):                                                                                                                                        #randomly change velocity direction 
-        a = random() * 2 * np.pi
-        self.vel = np.dot(self.vel, [[np.cos(a), np.sin(a)], [-np.sin(a), np.cos(a)]])
+        ang = random() * 2 * np.pi
+        self.vel = np.dot(self.vel, [[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]])
+    def draw(self, surface):
+        pg.draw.ellipse(surface, self.color, [self.coord - np.array([self.a, self.b]) / 2, [self.a, self.b]])
+        pg.draw.ellipse(surface, EDGE, [self.coord - np.array([self.a, self.b]) / 2, [self.a, self.b]], 2)
+
 
 def new_ball(spprob, minspcost, maxspcost):
     x = 100 + random() * 800
     y = 100 + random() * 500
-    r = 10 + random() * 40
+    r = 20 + random() * 80
     v_x = -500 + random() * 1000
     v_y = -500 + random() * 1000
     color = COLORS[randint(0, 5)]
@@ -126,7 +138,7 @@ while not finished:
             if change:
                 balls[i].chdir()
         balls[i].move()
-        draw_ball(screen, balls[i])
+        balls[i].draw(screen)
         balls[i].vel[1] += g * (1 / FPS)                                    # moving and drawing balls
 
     if score == 0:
