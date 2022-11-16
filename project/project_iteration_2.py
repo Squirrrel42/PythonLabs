@@ -2,6 +2,7 @@
 import pygame as pg
 import numpy as np
 from textures import *
+import time
 
 width = 1200
 height = 800
@@ -15,7 +16,7 @@ wall_height = 48
 colors = ["BLACK", "WHITE", "GREEN", "RED", "RED", "WHITE"]
 
 
-Level = np.array([                                       #Square only
+Level = [                                       #Square only
     [1, 1, 3, 4, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 1, 0, 1, 0, 1],
@@ -26,7 +27,7 @@ Level = np.array([                                       #Square only
     [5, 0, 0, 0, 0, 0, 1, 0, 0, 1],
     [1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
     [1, 1, 5, 1, 1, 1, 1, 1, 1, 1]
-])
+]
 
 lw = len(Level)
 mapscale = (height / (lw * 64))
@@ -111,6 +112,7 @@ PAUSED = False
 
 while not finished: 
     clock.tick(FPS)
+    fps_label = font.render(f"FPS: {int(clock.get_fps())}", True, "RED")
 
     for event in pg.event.get():                                
         if event.type == pg.QUIT:
@@ -298,6 +300,7 @@ while not finished:
         pg.draw.circle(mapscreen, pcol, obs.coord * mapscale, 5)
         screen.blit(mapscreen, [0.5 * (width - height), 0])
 
+    screen.blit(fps_label, [20, 20])
     pg.display.update()
 
             
