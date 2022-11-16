@@ -1,33 +1,35 @@
+
 import pygame as pg
 import numpy as np
+from textures import *
 
 width = 1200
-heigth = 800
+height = 800
 FOV = 60 
 sen = 2
 rays_number = 120
 fov_rad = FOV * np.pi / 180
 scale = width / fov_rad
 MODE = "3D"
-wall_heigth = 48
-colors = ["BLACK", "WHITE"]
+wall_height = 48
+colors = ["BLACK", "WHITE", "GREEN", "RED", "RED", "WHITE"]
 
 
 Level = np.array([                                       #Square only
-    np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]),
-    np.array([1, 0, 0, 1, 0, 0, 0, 0, 0, 1]),
-    np.array([1, 0, 0, 1, 0, 1, 0, 1, 0, 1]),
-    np.array([1, 0, 1, 1, 0, 1, 1, 1, 0, 1]),
-    np.array([1, 0, 0, 0, 0, 0, 1, 0, 0, 1]),
-    np.array([1, 0, 0, 0, 0, 0, 1, 0, 0, 1]),
-    np.array([1, 0, 1, 1, 1, 1, 1, 0, 0, 1]),
-    np.array([1, 0, 1, 0, 0, 0, 1, 0, 0, 1]),
-    np.array([1, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
-    np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+    [1, 1, 3, 4, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 1, 0, 1, 0, 1],
+    [1, 0, 0, 0, 0, 1, 1, 1, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+    [1, 0, 0, 0, 0, 1, 1, 0, 0, 1],
+    [5, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+    [1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+    [1, 1, 5, 1, 1, 1, 1, 1, 1, 1]
 ])
 
 lw = len(Level)
-mapscale = (heigth / (lw * 64))
+mapscale = (height / (lw * 64))
 
 
 def rotate(vec, ang):
@@ -98,12 +100,14 @@ obs = Player([550, 250], np.pi / 2, 200, 5)
 
 pg.init()
 FPS = 60
-screen = pg.display.set_mode([width, heigth])
+screen = pg.display.set_mode([width, height])
+mapscreen = pg.surface.Surface([height, height])
 clock = pg.time.Clock()
 finished = False
 pg.display.set_caption("RAYCASTER")
 font = pg.font.SysFont("comicsansms", 30)
 pg.mouse.set_visible(False)
+PAUSED = False
 
 while not finished: 
     clock.tick(FPS)
@@ -117,6 +121,20 @@ while not finished:
                     MODE = "Map"
                 else:
                     MODE = "3D"
+            if event.key == pg.K_ESCAPE:
+                PAUSED = True
+    
+    while PAUSED:
+        clock.tick(FPS)
+        for event in pg.event.get():                                
+            if event.type == pg.QUIT:
+                finished = True
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_ESCAPE:
+                    PAUSED = False
+        screen.fill("#444444")
+        pg.display.update()
+    
     
     pcol = "GREEN"
     alpha, move = move_controls(obs.ang)
@@ -136,7 +154,7 @@ while not finished:
 
     if MODE == "3D":
         obs.increase_ang(sen * pg.mouse.get_rel()[0] / scale)
-        pg.mouse.set_pos([width / 2, heigth / 2])
+        pg.mouse.set_pos([width / 2, height / 2])
         
 
     if move:
@@ -144,12 +162,13 @@ while not finished:
 
     if MODE == "3D":
         screen.fill("#444444")
-        pg.draw.rect(screen, "#666666", [[0, 0], [width, heigth / 2]])
+        pg.draw.rect(screen, "#666666", [[0, 0], [width, height / 2]])
     elif MODE == "Map":
         screen.fill("#444444")
+        mapscreen.fill("#444444")
         for i in range(lw):
             for j in range(lw):
-                pg.draw.rect(screen, colors[Level[j][i]], [[64 * mapscale * i + 1, 64 * mapscale * j + 1], [64 * mapscale - 2, 64 * mapscale - 2]]) 
+                pg.draw.rect(mapscreen, colors[Level[j][i]], [[64 * mapscale * i + 1, 64 * mapscale * j + 1], [64 * mapscale - 2, 64 * mapscale - 2]]) 
 
     #RAYCASTING
     for offset in np.linspace(- fov_rad / 2, fov_rad / 2, rays_number):
@@ -178,6 +197,8 @@ while not finished:
                         stopped = True
                         y = -1000000
                         x = obs.coord[0] - 1 / np.tan(angle) * (obs.coord[1] - y)
+                if i in range(lw) and j in range(lw):
+                    hor_cell = [Level[j][i], x % 64]
             else:
                 y = -1000000
                 x = obs.coord[0] - 1 / np.tan(angle) * (obs.coord[1] - y)
@@ -200,10 +221,14 @@ while not finished:
                         stopped = True
                         y = 1000000
                         x = obs.coord[0] - 1 / np.tan(angle) * (obs.coord[1] - y)
+                if i in range(lw) and j in range(lw):
+                    hor_cell = [Level[j][i], 64 - x % 64]
             else:
                 y = 1000000
                 x = obs.coord[0] - 1 / np.tan(angle) * (obs.coord[1] - y)
 
+        if not(i in range(lw) and j in range(lw)):
+            hor_cell = [0, 0]
         hor_vec = np.array([x, y]) - obs.coord
 
             #VERTICAL
@@ -225,6 +250,8 @@ while not finished:
                         stopped = True
                         x = -1000000
                         y = obs.coord[1] + (x - obs.coord[0]) * np.tan(angle)
+                if i in range(lw) and j in range(lw):
+                    ver_cell = [Level[j][i], 64 - y % 64]
             else:
                 x = -1000000
                 y = obs.coord[1] + (x - obs.coord[0]) * np.tan(angle)
@@ -247,25 +274,29 @@ while not finished:
                         stopped = True
                         x = 1000000
                         y = obs.coord[1] + (x - obs.coord[0]) * np.tan(angle)
+                if i in range(lw) and j in range(lw):
+                    ver_cell = [Level[j][i], y % 64]
             else:
                 x = 1000000
                 y = obs.coord[1] + (x - obs.coord[0]) * np.tan(angle)
-
+        if not (i in range(lw) and j in range(lw)):
+            ver_cell = [0, 0]
         ver_vec = np.array([x, y]) - obs.coord
 
         if mag(ver_vec) > mag(hor_vec):
             if MODE == "Map":
-                pg.draw.line(screen, "#004400", obs.coord * mapscale, (obs.coord + hor_vec) * mapscale)
+                pg.draw.line(mapscreen, "#004400", obs.coord * mapscale, (obs.coord + hor_vec) * mapscale)
             elif MODE == "3D":
-                pg.draw.line(screen, "#004400", [(offset + fov_rad / 2) * scale, heigth / 2 - wall_heigth / mag(hor_vec) / np.cos(offset) * scale * 1 / 2], [(offset + fov_rad / 2) * scale, heigth / 2 + wall_heigth / mag(hor_vec) / np.cos(offset) * scale * 1 / 2], int(width / rays_number) + 1)
+                texdraw(screen, hor_cell[1], TEXTURES[hor_cell[0]], wall_height / mag(hor_vec) / np.cos(offset) * scale, [(offset + fov_rad / 2) * scale, height / 2], int(width / rays_number) + 1, 0)
         else:
             if MODE == "Map":
-                pg.draw.line(screen, "#003300", obs.coord * mapscale, (obs.coord + ver_vec) * mapscale)
+                pg.draw.line(mapscreen, "#003300", obs.coord * mapscale, (obs.coord + ver_vec) * mapscale)
             elif MODE == "3D":
-                pg.draw.line(screen, "#003300", [(offset + fov_rad / 2) * scale, heigth / 2 - wall_heigth / mag(ver_vec) / np.cos(offset) * scale * 1 / 2], [(offset + fov_rad / 2) * scale, heigth / 2 + wall_heigth / mag(ver_vec) / np.cos(offset) * scale * 1 / 2], int(width / rays_number) + 1)
+                texdraw(screen, ver_cell[1], TEXTURES[ver_cell[0]], wall_height / mag(ver_vec) / np.cos(offset) * scale, [(offset + fov_rad / 2) * scale, height / 2], int(width / rays_number) + 1, 0.3)
     
     if MODE == "Map":
-        pg.draw.circle(screen, pcol, obs.coord * mapscale, 5)
+        pg.draw.circle(mapscreen, pcol, obs.coord * mapscale, 5)
+        screen.blit(mapscreen, [0.5 * (width - height), 0])
 
     pg.display.update()
 
