@@ -13,8 +13,17 @@ fov_rad = FOV * np.pi / 180
 scale = width / fov_rad
 MODE = "3D"
 wall_height = 48
+len0 = len(TEXTURES)
 colors = ["BLACK", "WHITE", "GREEN", "RED", "RED", "WHITE", "BLUE", "GREEN"]
 
+def new_texture(size):
+    a = []
+    for i in range(size):
+        b = []
+        for j in range(size):
+            b.append(0)
+        a.append(b)
+    return a
 
 Level = [                                       #Square only
     [1, 3, 4, 1, 1, 1, 1, 1, 1, 3, 4, 1, 1, 1, 1, 1],
@@ -109,6 +118,7 @@ pg.init()
 FPS = 60
 screen = pg.display.set_mode([width, height])
 mapscreen = pg.surface.Surface([height, height])
+drawscreen = pg.surface.Surface([height, height])
 clock = pg.time.Clock()
 finished = False
 pg.display.set_caption("RAYCASTER")
@@ -116,7 +126,8 @@ font = pg.font.SysFont("comicsansms", 30)
 pg.mouse.set_visible(False)
 PAUSED = False
 
-while not finished: 
+while not finished:
+    todraw = False
     clock.tick(FPS)
     fps_label = font.render(f"FPS: {int(clock.get_fps())}", True, "RED")
 
@@ -129,9 +140,94 @@ while not finished:
                     MODE = "Map"
                 else:
                     MODE = "3D"
+            if event.key == pg.K_e:
+                todraw = True
             if event.key == pg.K_ESCAPE:
                 PAUSED = True
     
+    #check if there is a wall in front of the player
+    i_w = 0
+    j_w = 0
+    is_wall = False
+    if todraw:
+        if obs.ang < np.pi / 4 or obs.ang > 7 * np.pi / 4:
+            i = int(obs.coord[0] // 64) + 1
+            j = int(obs.coord[1] // 64)
+            is_wall = Level[j][i]
+        elif obs.ang < 3 * np.pi / 4:
+            i = int(obs.coord[0] // 64)
+            j = int(obs.coord[1] // 64) + 1
+            is_wall = Level[j][i]
+        elif obs.ang < 5 * np.pi / 4:
+            i = int(obs.coord[0] // 64) - 1
+            j = int(obs.coord[1] // 64)
+            is_wall = Level[j][i]
+        elif obs.ang < 7 * np.pi / 4:
+            i = int(obs.coord[0] // 64)
+            j = int(obs.coord[1] // 64) - 1
+            is_wall = Level[j][i]
+        k = i
+        m = j
+    
+    #Drawing the wall in editor
+    if (is_wall > 0) and todraw and not finished:
+        MODE = "Draw"
+        tex = TEXTURES[is_wall]
+        if is_wall < len0:
+            texture = []
+            for j in tex:
+                row = []
+                for i in j:
+                    row.append(i)
+                texture.append(row)
+        else:
+            texture = tex
+        texscale = height / len(texture)
+        COLOR = 0
+        while MODE == "Draw":
+            chcolor = False
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    running = False
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_TAB:
+                        COLOR += 1
+                        if COLOR >= len(COLORS):
+                            COLOR = 0
+                    if event.key == pg.K_e:
+                        MODE = "3D"
+
+            left, middle, right = pg.mouse.get_pressed()
+            if left:
+                chcolor = True
+            x, y = pg.mouse.get_pos()
+
+            if chcolor:
+                i, j = int(x // texscale), int(y // texscale)
+                if i < 0:
+                    i = 0
+                if j < 0:
+                    j = 0
+                if i > len(texture) - 1:
+                    i = len(texture) - 1
+                if j > len(texture) - 1:
+                    j = len(texture) - 1
+                texture[j][i] = COLOR
+
+            clock.tick(FPS)
+            screen.fill("#444444")
+            drawscreen.fill("#444444")
+            for i in range(len(texture)):
+                for j in range(len(texture[0])):
+                        pg.draw.rect(drawscreen, COLORS[texture[j][i]], [[texscale * i + 1, texscale * j + 1], [texscale - 2, texscale - 2]])
+            pg.draw.circle(drawscreen, "GREY", [x, y], 7)
+            pg.draw.circle(drawscreen, COLORS[COLOR], [x, y], 6)
+            screen.blit(drawscreen, [(width - height) / 2, 0])
+            pg.display.update()
+        if is_wall < len0:
+            TEXTURES.append(texture)
+        Level[m][k] = TEXTURES.index(texture)
+
     while PAUSED:
         clock.tick(FPS)
         for event in pg.event.get():                                
@@ -160,6 +256,7 @@ while not finished:
     elif keys[pg.K_LEFT]:
         obs.rotate(-1)
 
+
     if MODE == "3D":
         obs.increase_ang(sen * pg.mouse.get_rel()[0] / scale)
         pg.mouse.set_pos([width / 2, height / 2])
@@ -176,7 +273,10 @@ while not finished:
         mapscreen.fill("#444444")
         for i in range(lw):
             for j in range(lw):
-                pg.draw.rect(mapscreen, colors[Level[j][i]], [[64 * mapscale * i + 1, 64 * mapscale * j + 1], [64 * mapscale - 2, 64 * mapscale - 2]]) 
+                if Level[j][i] == 0:
+                    pg.draw.rect(mapscreen, colors[0], [[64 * mapscale * i + 1, 64 * mapscale * j + 1], [64 * mapscale - 2, 64 * mapscale - 2]]) 
+                else:
+                    pg.draw.rect(mapscreen, colors[1], [[64 * mapscale * i + 1, 64 * mapscale * j + 1], [64 * mapscale - 2, 64 * mapscale - 2]])
 
     #RAYCASTING
     for offset in np.linspace(- fov_rad / 2, fov_rad / 2, rays_number):
