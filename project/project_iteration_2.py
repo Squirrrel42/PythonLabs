@@ -2,6 +2,7 @@
 import pygame as pg
 import numpy as np
 from textures import *
+from ray_module import *
 import time
 
 width = 1200
@@ -25,6 +26,8 @@ def new_texture(size):
             b.append(0)
         a.append(b)
     return a
+
+
 
 Level = [                                       #Square only
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1],
@@ -85,12 +88,19 @@ def mag(vec):
     return np.sqrt(np.sum(i**2 for i in vec))
 
 class Beam:
-    def __init__(self, coord_1, coord_2, height, thickness, qual):
+    def __init__(self, lmap, coord_1, ang, length, height, thickness, qual):
         self.coord_1 = np.array(coord_1)
-        self.coord_2 = np.array(coord_2)
+        self.ang = ang
+        self.length = length
         self.thickness = thickness
         self.qual = qual
         self.height = height
+        self.timer = 0
+        #checking if the beam hits a wall
+        hor_vec, ver_vec, hor_cell, ver_cell = ray(Level, self.coord_1, self.ang)
+        if min(mag(hor_vec), mag(ver_vec)) < self.length:
+            self.length = min(mag(hor_vec), mag(ver_vec))
+        self.coord_2 = self.coord_1 + self.length * np.array([np.cos(self.ang), np.sin(self.ang)])
     def draw(self, player, surface):
         X = np.linspace(self.coord_1[0], self.coord_2[0], self.qual)
         Y = np.linspace(self.coord_1[1], self.coord_2[1], self.qual)
@@ -105,98 +115,8 @@ class Beam:
             if angle < 0:
                 angle += 2 * np.pi
             Angle.append(angle)
-                #Some raycasting-like checking for the beam
-                #HORIZONTAL
-            if (angle > np.pi and angle < 2 * np.pi):             #UP
-                j = int(obs.coord[1] // 64 - 1)
-                y = 64 * (j + 1)
-                x = obs.coord[0] - 1 / np.tan(angle) * (obs.coord[1] - y)
-                i = int(x // 64)
-                if i in range(lw) and j in range(lw):
-                    stopped = (Level[j][i] > 0)
-                    while not stopped:
-                        x -= 64 / np.tan(angle)
-                        y -= 64
-                        i = int(x // 64)
-                        j = int(y // 64) - 1
-                        if i in range(lw) and j in range(lw):
-                            stopped = (Level[j][i] > 0)
-                        else:
-                            stopped = True
-                            y = -1000000
-                            x = obs.coord[0] - 1 / np.tan(angle) * (obs.coord[1] - y)
-                else:
-                    y = -1000000
-                    x = obs.coord[0] - 1 / np.tan(angle) * (obs.coord[1] - y)
-
-            else:                                                                                          #DOWN
-                j = int(obs.coord[1] // 64) + 1
-                y = 64 * (j)
-                x = obs.coord[0] - 1 / np.tan(angle) * (obs.coord[1] - y)
-                i = int(x // 64)
-                if i in range(lw) and j in range(lw):
-                    stopped = (Level[j][i] > 0)
-                    while not stopped:
-                        x += 64 / np.tan(angle)
-                        y += 64
-                        i = int(x // 64)
-                        j = int(y // 64)
-                        if i in range(lw) and j in range(lw):
-                            stopped = (Level[j][i] > 0)
-                        else:
-                            stopped = True
-                            y = 1000000
-                            x = obs.coord[0] - 1 / np.tan(angle) * (obs.coord[1] - y)
-                else:
-                    y = 1000000
-                    x = obs.coord[0] - 1 / np.tan(angle) * (obs.coord[1] - y)
-            hor_vec = np.array([x, y]) - obs.coord
-
-                #VERTICAL
-            if (angle > 0.5 * np.pi and angle < 1.5 * np.pi):             #LEFT
-                i = int(obs.coord[0] // 64 - 1)
-                x = 64 * (i + 1)
-                y = obs.coord[1] + (x - obs.coord[0]) * np.tan(angle)
-                j = int(y // 64)
-                if i in range(lw) and j in range(lw):
-                    stopped = (Level[j][i] > 0)
-                    while not stopped:
-                        x -= 64
-                        y -= 64 * np.tan(angle)
-                        i = int(x // 64 - 1)
-                        j = int(y // 64)
-                        if i in range(lw) and j in range(lw):
-                            stopped = (Level[j][i] > 0)
-                        else:
-                            stopped = True
-                            x = -1000000
-                            y = obs.coord[1] + (x - obs.coord[0]) * np.tan(angle)
-                else:
-                    x = -1000000
-                    y = obs.coord[1] + (x - obs.coord[0]) * np.tan(angle)
-
-            else:                                                                                 #RIGHT
-                i = int(obs.coord[0] // 64) + 1
-                x = 64 * (i)
-                y = obs.coord[1] + (x - obs.coord[0]) * np.tan(angle)
-                j = int(y // 64)
-                if i in range(lw) and j in range(lw):
-                    stopped = (Level[j][i] > 0)
-                    while not stopped:
-                        x += 64
-                        y += 64 * np.tan(angle)
-                        i = int(x // 64)
-                        j = int(y // 64)
-                        if i in range(lw) and j in range(lw):
-                            stopped = (Level[j][i] > 0)
-                        else:
-                            stopped = True
-                            x = 1000000
-                            y = obs.coord[1] + (x - obs.coord[0]) * np.tan(angle)
-                else:
-                    x = 1000000
-                    y = obs.coord[1] + (x - obs.coord[0]) * np.tan(angle)
-            ver_vec = np.array([x, y]) - obs.coord
+                #Calcilating drawing props via raycast
+            hor_vec, ver_vec, hor_cell, ver_cell = ray(Level, obs.coord, angle)
             Visible.append(min(mag(ver_vec), mag(hor_vec)) > dist)
 
         for i in range(self.qual - 1):
@@ -211,11 +131,12 @@ class Beam:
             while offset2 < - np.pi:
                 offset2 += 2 * np.pi
             if np.abs(offset1) < fov_rad / 2 + 1 and np.abs(offset2) < fov_rad / 2 + 1 and (Visible[i] and Visible[i + 1]):
-                pg.draw.line(surface, "CYAN", [width / 2 + offset1 * scale, height / 2 + (self.height / Dist[i]) / np.cos(offset1)], [width / 2 + offset2 * scale, height / 2 + (self.height / Dist[i + 1]) / np.cos(offset2)], int(self.thickness * 2 / (Dist[i] + Dist[i + 1]) / np.cos(offset1 / 2 + offset2 / 2)) + 1)
+                pg.draw.line(surface, "CYAN", [width / 2 + offset1 * scale, height / 2 + (self.height / Dist[i]) / np.cos(offset1)], [width / 2 + offset2 * scale, height / 2 + (self.height / Dist[i + 1]) / np.cos(offset2)], int(self.thickness * 2 / (Dist[i] + Dist[i + 1]) / np.cos(offset1 / 2 + offset2 / 2) / (self.timer * 10 + 1)) + 1)
                 if i == 0:
-                    pg.draw.circle(surface, "CYAN", [width / 2 + offset1 * scale, height / 2 + (self.height / Dist[0]) / np.cos(offset1)], int(self.thickness / Dist[0] / 2 / np.cos(offset1)) + 1)
+                    pg.draw.circle(surface, "CYAN", [width / 2 + offset1 * scale, height / 2 + (self.height / Dist[0]) / np.cos(offset1)], int(self.thickness / Dist[0] / 2 / np.cos(offset1) / (self.timer * 10 + 1)) + 1)
                 elif i == self.qual - 2:
-                    pg.draw.circle(surface, "CYAN", [width / 2 + offset2 * scale, height / 2 + (self.height / Dist[self.qual - 1]) / np.cos(offset2)], int(self.thickness / Dist[self.qual - 1] / 2 / np.cos(offset2)) + 1)
+                    pg.draw.circle(surface, "CYAN", [width / 2 + offset2 * scale, height / 2 + (self.height / Dist[self.qual - 1]) / np.cos(offset2)], int(self.thickness / Dist[self.qual - 1] / 2 / np.cos(offset2) / (self.timer * 10 + 1)) + 1)
+        self.timer += 1 / FPS
 
 class Player:
     def __init__(self, coord, ang, spd, omega):
@@ -261,6 +182,7 @@ PAUSED = False
 
 while not finished:
     todraw = False
+    shooting = False
     clock.tick(FPS)
     fps_label = font.render(f"FPS: {int(clock.get_fps())}", True, "RED")
 
@@ -277,6 +199,10 @@ while not finished:
                 todraw = True
             if event.key == pg.K_ESCAPE:
                 PAUSED = True
+        if event.type == pg.MOUSEBUTTONDOWN:
+            left, middle, right = pg.mouse.get_pressed()
+            if left:
+                shooting = True
     
     #check if there is a wall in front of the player
     i_w = 0
@@ -421,112 +347,8 @@ while not finished:
             angle -= 2 * np.pi
         elif angle < 0:
             angle += 2 * np.pi
-
-            #HORIZONTAL
-        if (angle > np.pi and angle < 2 * np.pi):             #UP
-            j = int(obs.coord[1] // 64 - 1)
-            y = 64 * (j + 1)
-            x = obs.coord[0] - 1 / np.tan(angle) * (obs.coord[1] - y)
-            i = int(x // 64)
-            if i in range(lw) and j in range(lw):
-                stopped = (Level[j][i] > 0)
-                while not stopped:
-                    x -= 64 / np.tan(angle)
-                    y -= 64
-                    i = int(x // 64)
-                    j = int(y // 64) - 1
-                    if i in range(lw) and j in range(lw):
-                        stopped = (Level[j][i] > 0)
-                    else:
-                        stopped = True
-                        y = -1000000
-                        x = obs.coord[0] - 1 / np.tan(angle) * (obs.coord[1] - y)
-                if i in range(lw) and j in range(lw):
-                    hor_cell = [Level[j][i], x % 64]
-            else:
-                y = -1000000
-                x = obs.coord[0] - 1 / np.tan(angle) * (obs.coord[1] - y)
-
-        else:                                                                                          #DOWN
-            j = int(obs.coord[1] // 64) + 1
-            y = 64 * (j)
-            x = obs.coord[0] - 1 / np.tan(angle) * (obs.coord[1] - y)
-            i = int(x // 64)
-            if i in range(lw) and j in range(lw):
-                stopped = (Level[j][i] > 0)
-                while not stopped:
-                    x += 64 / np.tan(angle)
-                    y += 64
-                    i = int(x // 64)
-                    j = int(y // 64)
-                    if i in range(lw) and j in range(lw):
-                        stopped = (Level[j][i] > 0)
-                    else:
-                        stopped = True
-                        y = 1000000
-                        x = obs.coord[0] - 1 / np.tan(angle) * (obs.coord[1] - y)
-                if i in range(lw) and j in range(lw):
-                    hor_cell = [Level[j][i], 64 - x % 64]
-            else:
-                y = 1000000
-                x = obs.coord[0] - 1 / np.tan(angle) * (obs.coord[1] - y)
-
-        if not(i in range(lw) and j in range(lw)):
-            hor_cell = [0, 0]
-        hor_vec = np.array([x, y]) - obs.coord
-
-            #VERTICAL
-        if (angle > 0.5 * np.pi and angle < 1.5 * np.pi):             #LEFT
-            i = int(obs.coord[0] // 64 - 1)
-            x = 64 * (i + 1)
-            y = obs.coord[1] + (x - obs.coord[0]) * np.tan(angle)
-            j = int(y // 64)
-            if i in range(lw) and j in range(lw):
-                stopped = (Level[j][i] > 0)
-                while not stopped:
-                    x -= 64
-                    y -= 64 * np.tan(angle)
-                    i = int(x // 64 - 1)
-                    j = int(y // 64)
-                    if i in range(lw) and j in range(lw):
-                        stopped = (Level[j][i] > 0)
-                    else:
-                        stopped = True
-                        x = -1000000
-                        y = obs.coord[1] + (x - obs.coord[0]) * np.tan(angle)
-                if i in range(lw) and j in range(lw):
-                    ver_cell = [Level[j][i], 64 - y % 64]
-            else:
-                x = -1000000
-                y = obs.coord[1] + (x - obs.coord[0]) * np.tan(angle)
-
-        else:                                                                                 #RIGHT
-            i = int(obs.coord[0] // 64) + 1
-            x = 64 * (i)
-            y = obs.coord[1] + (x - obs.coord[0]) * np.tan(angle)
-            j = int(y // 64)
-            if i in range(lw) and j in range(lw):
-                stopped = (Level[j][i] > 0)
-                while not stopped:
-                    x += 64
-                    y += 64 * np.tan(angle)
-                    i = int(x // 64)
-                    j = int(y // 64)
-                    if i in range(lw) and j in range(lw):
-                        stopped = (Level[j][i] > 0)
-                    else:
-                        stopped = True
-                        x = 1000000
-                        y = obs.coord[1] + (x - obs.coord[0]) * np.tan(angle)
-                if i in range(lw) and j in range(lw):
-                    ver_cell = [Level[j][i], y % 64]
-            else:
-                x = 1000000
-                y = obs.coord[1] + (x - obs.coord[0]) * np.tan(angle)
-        if not (i in range(lw) and j in range(lw)):
-            ver_cell = [0, 0]
-        ver_vec = np.array([x, y]) - obs.coord
-    
+        #Calculating ray props
+        hor_vec, ver_vec, hor_cell, ver_cell = ray(Level, obs.coord, angle)
         #Walls
         if mag(ver_vec) > mag(hor_vec):
             if MODE == "Map":
@@ -540,12 +362,9 @@ while not finished:
                 texdraw(screen, ver_cell[1], TEXTURES[ver_cell[0]], wall_height / mag(ver_vec) / np.cos(offset) * scale, [(offset + fov_rad / 2) * scale, height / 2], int(width / rays_number) + 1, 0.5)
     
     #Code for the laser pointer
-    left, middle, right = pg.mouse.get_pressed()
-    if left:
+    if shooting:
         BEAMS.append(Beam(
-            [obs.coord[0] + 3 * np.cos(obs.ang + 2), obs.coord[1] + 3 * np.sin(obs.ang + 2)],
-            [obs.coord[0] + 300 * np.cos(obs.ang), obs.coord[1] + 300 * np.sin(obs.ang)], 3000, 500, 30)
-            )
+            Level, [obs.coord[0] + 3 * np.cos(obs.ang + 2), obs.coord[1] + 3 * np.sin(obs.ang + 2)], obs.ang, 300, 3000, 500, 30))
     if MODE == "Map":
         pg.draw.circle(mapscreen, pcol, obs.coord * mapscale, 5)
         screen.blit(mapscreen, [0.5 * (width - height), 0])
@@ -553,8 +372,10 @@ while not finished:
         for beam in BEAMS:
             beam.draw(obs, screen)
     screen.blit(fps_label, [20, 20])
-    if len(BEAMS) > 0:
-        del BEAMS[-1]
+    for beam in BEAMS:
+        if beam.timer > 0.2:
+            BEAMS.remove(beam)
+            del beam
     pg.display.update()
 
             
