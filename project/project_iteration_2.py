@@ -1,6 +1,6 @@
-
 import pygame as pg
 import numpy as np
+from enemies import *
 from textures import *
 from ray_module import *
 from weapons import *
@@ -9,7 +9,7 @@ import time
 
 width = 1200
 height = 800
-FOV = 60 
+FOV = 60
 sen = 2
 rays_number = 120
 fov_rad = FOV * np.pi / 180
@@ -21,6 +21,7 @@ colors = ["BLACK", "WHITE", "GREEN", "RED", "RED", "WHITE", "BLUE", "GREEN"]
 BEAMS = []
 Shotgun = Weapon()
 
+
 def new_texture(size):
     a = []
     for i in range(size):
@@ -31,8 +32,7 @@ def new_texture(size):
     return a
 
 
-
-Level = [                                       #Square only
+Level1 = [  # Square only
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1],
     [1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1],
     [1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1],
@@ -40,12 +40,31 @@ Level = [                                       #Square only
     [1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1],
-    [1, 1, 1, 5, 0, 0, 1, 1, 1, 6, 1, 5, 1, 0, 1, 1],   
+    [1, 1, 1, 5, 0, 0, 1, 1, 1, 6, 1, 5, 1, 0, 1, 1],
     [1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
     [1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1],
     [1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1],
     [1, 0, 0, 1, 2, 2, 0, 1, 1, 0, 0, 1, 2, 2, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 5, 1, 1, 1, 1, 1, 1, 1, 5, 1, 1, 1, 1]
+]
+
+Level = [  # Square only
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 1, 1, 5, 1, 1, 1, 1, 1, 1, 1, 5, 1, 1, 1, 1]
@@ -57,6 +76,7 @@ mapscale = (height / (lw * 64))
 
 def rotate(vec, ang):
     return np.dot(vec, [[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]])
+
 
 def move_controls(alpha):
     move = False
@@ -87,8 +107,10 @@ def move_controls(alpha):
         move = True
     return alpha, move
 
-def mag(vec): 
-    return np.sqrt(np.sum(i**2 for i in vec))
+
+def mag(vec):
+    return np.sqrt(np.sum(i ** 2 for i in vec))
+
 
 class Beam:
     def __init__(self, lmap, coord_1, ang, length, height, thickness, qual):
@@ -99,11 +121,12 @@ class Beam:
         self.qual = qual
         self.height = height
         self.timer = 0
-        #checking if the beam hits a wall
+        # checking if the beam hits a wall
         hor_vec, ver_vec, hor_cell, ver_cell = ray(Level, self.coord_1, self.ang)
         if min(mag(hor_vec), mag(ver_vec)) < self.length:
             self.length = min(mag(hor_vec), mag(ver_vec))
         self.coord_2 = self.coord_1 + self.length * np.array([np.cos(self.ang), np.sin(self.ang)])
+
     def draw(self, player, surface):
         X = np.linspace(self.coord_1[0], self.coord_2[0], self.qual)
         Y = np.linspace(self.coord_1[1], self.coord_2[1], self.qual)
@@ -118,7 +141,7 @@ class Beam:
             if angle < 0:
                 angle += 2 * np.pi
             Angle.append(angle)
-                #Calcilating drawing props via raycast
+            # Calcilating drawing props via raycast
             hor_vec, ver_vec, hor_cell, ver_cell = ray(Level, obs.coord, angle)
             Visible.append(min(mag(ver_vec), mag(hor_vec)) > dist)
 
@@ -133,13 +156,25 @@ class Beam:
                 offset2 -= 2 * np.pi
             while offset2 < - np.pi:
                 offset2 += 2 * np.pi
-            if np.abs(offset1) < fov_rad / 2 + 1 and np.abs(offset2) < fov_rad / 2 + 1 and (Visible[i] and Visible[i + 1]):
-                pg.draw.line(surface, "CYAN", [width / 2 + offset1 * scale, height / 2 + (self.height / Dist[i]) / np.cos(offset1)], [width / 2 + offset2 * scale, height / 2 + (self.height / Dist[i + 1]) / np.cos(offset2)], int(self.thickness * 2 / (Dist[i] + Dist[i + 1]) / np.cos(offset1 / 2 + offset2 / 2) / (self.timer * 10 + 1)) + 1)
+            if np.abs(offset1) < fov_rad / 2 + 1 and np.abs(offset2) < fov_rad / 2 + 1 and (
+                    Visible[i] and Visible[i + 1]):
+                pg.draw.line(surface, "CYAN",
+                             [width / 2 + offset1 * scale, height / 2 + (self.height / Dist[i]) / np.cos(offset1)],
+                             [width / 2 + offset2 * scale, height / 2 + (self.height / Dist[i + 1]) / np.cos(offset2)],
+                             int(self.thickness * 2 / (Dist[i] + Dist[i + 1]) / np.cos(offset1 / 2 + offset2 / 2) / (
+                                         self.timer * 10 + 1)) + 1)
                 if i == 0:
-                    pg.draw.circle(surface, "CYAN", [width / 2 + offset1 * scale, height / 2 + (self.height / Dist[0]) / np.cos(offset1)], int(self.thickness / Dist[0] / 2 / np.cos(offset1) / (self.timer * 10 + 1)) + 1)
+                    pg.draw.circle(surface, "CYAN", [width / 2 + offset1 * scale,
+                                                     height / 2 + (self.height / Dist[0]) / np.cos(offset1)],
+                                   int(self.thickness / Dist[0] / 2 / np.cos(offset1) / (self.timer * 10 + 1)) + 1)
                 elif i == self.qual - 2:
-                    pg.draw.circle(surface, "CYAN", [width / 2 + offset2 * scale, height / 2 + (self.height / Dist[self.qual - 1]) / np.cos(offset2)], int(self.thickness / Dist[self.qual - 1] / 2 / np.cos(offset2) / (self.timer * 10 + 1)) + 1)
+                    pg.draw.circle(surface, "CYAN", [width / 2 + offset2 * scale,
+                                                     height / 2 + (self.height / Dist[self.qual - 1]) / np.cos(
+                                                         offset2)],
+                                   int(self.thickness / Dist[self.qual - 1] / 2 / np.cos(offset2) / (
+                                               self.timer * 10 + 1)) + 1)
         self.timer += 1 / FPS
+
 
 class Player:
     def __init__(self, coord, ang, spd, omega):
@@ -147,20 +182,30 @@ class Player:
         self.ang = -ang
         self.spd = spd
         self.omega = omega
+
     def move(self, angle):
         self.coord = self.coord + self.spd / FPS * rotate([1, 0], angle)
+
     def rotate(self, dirc):
         self.ang += dirc / FPS * self.omega
         if self.ang > 2 * np.pi:
             self.ang -= 2 * np.pi
         elif self.ang < 0:
             self.ang += 2 * np.pi
+
     def collision(self, i, j, angle):
         shift = rotate([2 * self.spd / FPS, 0], angle)
-        return[
-            (self.coord[0] <= 64 * (i + 1) + 2 * self.spd / FPS) and (self.coord[0] >= 64 * i - 2 * self.spd / FPS) and (self.coord[1] >= 64 * j - 2 * self.spd / FPS) and (self.coord[1] <= 64 * (j + 1) + 2 * self.spd / FPS),
-            (self.coord[0] + shift[0] <= 64 * (i + 1) +  2 * self.spd / FPS) and (self.coord[0] + shift[0] >= 64 * i -  2 * self.spd / FPS) and (self.coord[1] + shift[1] >= 64 * j -  2 * self.spd / FPS) and (self.coord[1] + shift[1] <= 64 * (j + 1) +  2 * self.spd / FPS)
+        return [
+            (self.coord[0] <= 64 * (i + 1) + 2 * self.spd / FPS) and (
+                        self.coord[0] >= 64 * i - 2 * self.spd / FPS) and (
+                        self.coord[1] >= 64 * j - 2 * self.spd / FPS) and (
+                        self.coord[1] <= 64 * (j + 1) + 2 * self.spd / FPS),
+            (self.coord[0] + shift[0] <= 64 * (i + 1) + 2 * self.spd / FPS) and (
+                        self.coord[0] + shift[0] >= 64 * i - 2 * self.spd / FPS) and (
+                        self.coord[1] + shift[1] >= 64 * j - 2 * self.spd / FPS) and (
+                        self.coord[1] + shift[1] <= 64 * (j + 1) + 2 * self.spd / FPS)
         ]
+
     def increase_ang(self, value):
         self.ang += value
         if self.ang > 2 * np.pi:
@@ -170,6 +215,8 @@ class Player:
 
 
 obs = Player([104, 104], np.pi / 2, 200, 5)
+
+enemy = Enemy([920, 920], 50)
 
 pg.init()
 FPS = 60
@@ -189,7 +236,7 @@ while not finished:
     clock.tick(FPS)
     fps_label = font.render(f"FPS: {int(clock.get_fps())}", True, "RED")
 
-    for event in pg.event.get():                                
+    for event in pg.event.get():
         if event.type == pg.QUIT:
             finished = True
         if event.type == pg.KEYDOWN:
@@ -206,8 +253,8 @@ while not finished:
             left, middle, right = pg.mouse.get_pressed()
             if left:
                 shooting = True
-    
-    #check if there is a wall in front of the player
+
+    # check if there is a wall in front of the player
     i_w = 0
     j_w = 0
     is_wall = False
@@ -230,8 +277,8 @@ while not finished:
             is_wall = Level[j][i]
         k = i
         m = j
-    
-    #Drawing the wall in editor
+
+    # Drawing the wall in editor
     if (is_wall > 0) and todraw and not finished:
         MODE = "Draw"
         tex = TEXTURES[is_wall]
@@ -250,7 +297,7 @@ while not finished:
             chcolor = False
             for event in pg.event.get():
                 if event.type == pg.QUIT:
-                    finished = True 
+                    finished = True
                     mode = "3D"
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_TAB:
@@ -283,7 +330,8 @@ while not finished:
             drawscreen.fill("#444444")
             for i in range(len(texture)):
                 for j in range(len(texture[0])):
-                    pg.draw.rect(drawscreen, COLORS[texture[j][i]], [[texscale * i + 1, texscale * j + 1], [texscale - 2, texscale - 2]])
+                    pg.draw.rect(drawscreen, COLORS[texture[j][i]],
+                                 [[texscale * i + 1, texscale * j + 1], [texscale - 2, texscale - 2]])
             screen.blit(drawscreen, [(width - height) / 2, 0])
             pg.draw.circle(screen, "GREY", [x1, y], 7)
             pg.draw.circle(screen, COLORS[COLOR], [x1, y], 6)
@@ -294,7 +342,7 @@ while not finished:
 
     while PAUSED:
         clock.tick(FPS)
-        for event in pg.event.get():                                
+        for event in pg.event.get():
             if event.type == pg.QUIT:
                 finished = True
                 PAUSED = False
@@ -303,8 +351,7 @@ while not finished:
                     PAUSED = False
         screen.fill("#444444")
         pg.display.update()
-    
-    
+
     pcol = "GREEN"
     alpha, move = move_controls(obs.ang)
     for i in range(lw):
@@ -321,11 +368,9 @@ while not finished:
     elif keys[pg.K_LEFT]:
         obs.rotate(-1)
 
-
     if MODE == "3D":
         obs.increase_ang(sen * pg.mouse.get_rel()[0] / scale)
         pg.mouse.set_pos([width / 2, height / 2])
-        
 
     if move:
         obs.move(alpha)
@@ -339,40 +384,55 @@ while not finished:
         for i in range(lw):
             for j in range(lw):
                 if Level[j][i] == 0:
-                    pg.draw.rect(mapscreen, colors[0], [[64 * mapscale * i + 1, 64 * mapscale * j + 1], [64 * mapscale - 2, 64 * mapscale - 2]]) 
+                    pg.draw.rect(mapscreen, colors[0], [[64 * mapscale * i + 1, 64 * mapscale * j + 1],
+                                                        [64 * mapscale - 2, 64 * mapscale - 2]])
                 else:
-                    pg.draw.rect(mapscreen, colors[1], [[64 * mapscale * i + 1, 64 * mapscale * j + 1], [64 * mapscale - 2, 64 * mapscale - 2]])
+                    pg.draw.rect(mapscreen, colors[1], [[64 * mapscale * i + 1, 64 * mapscale * j + 1],
+                                                        [64 * mapscale - 2, 64 * mapscale - 2]])
 
-    #RAYCASTING
+    # RAYCASTING
     for offset in np.linspace(- fov_rad / 2, fov_rad / 2, rays_number):
         angle = offset + obs.ang
         if angle > 2 * np.pi:
             angle -= 2 * np.pi
         elif angle < 0:
             angle += 2 * np.pi
-        #Calculating ray props
+        # Calculating ray props
         hor_vec, ver_vec, hor_cell, ver_cell = ray(Level, obs.coord, angle)
-        #Walls
+        # Walls
         if mag(ver_vec) > mag(hor_vec):
             if MODE == "Map":
                 pg.draw.line(mapscreen, "#004400", obs.coord * mapscale, (obs.coord + hor_vec) * mapscale)
             elif MODE == "3D":
-                texdraw(screen, hor_cell[1], TEXTURES[hor_cell[0]], wall_height / mag(hor_vec) / np.cos(offset) * scale, [(offset + fov_rad / 2) * scale, height / 2], int(width / rays_number) + 1, 0)
+                texdraw(screen, hor_cell[1], TEXTURES[hor_cell[0]], wall_height / mag(hor_vec) / np.cos(offset) * scale,
+                        [(offset + fov_rad / 2) * scale, height / 2], int(width / rays_number) + 1, 0)
         else:
             if MODE == "Map":
                 pg.draw.line(mapscreen, "#003300", obs.coord * mapscale, (obs.coord + ver_vec) * mapscale)
             elif MODE == "3D":
-                texdraw(screen, ver_cell[1], TEXTURES[ver_cell[0]], wall_height / mag(ver_vec) / np.cos(offset) * scale, [(offset + fov_rad / 2) * scale, height / 2], int(width / rays_number) + 1, 0.5)
-    
-    #Code for the laser shotgun
+                texdraw(screen, ver_cell[1], TEXTURES[ver_cell[0]], wall_height / mag(ver_vec) / np.cos(offset) * scale,
+                        [(offset + fov_rad / 2) * scale, height / 2], int(width / rays_number) + 1, 0.5)
+
+    # Code for the laser shotgun
     if MODE == "3D":
         if Shotgun.state == 1:
             for i in range(5):
                 BEAMS.append(Beam(
-                        Level, [obs.coord[0] + 5 * np.cos(obs.ang), obs.coord[1] + 5 * np.sin(obs.ang)], obs.ang + (0.5 - random()) * 0.3, 300, 1300, 500, 30
+                    Level, [obs.coord[0] + 5 * np.cos(obs.ang), obs.coord[1] + 5 * np.sin(obs.ang)],
+                    obs.ang + (0.5 - random()) * 0.3, 300, 1300, 500, 30
                 ))
     if MODE == "Map":
         pg.draw.circle(mapscreen, pcol, obs.coord * mapscale, 5)
+
+        aboba = enemy.move(obs, Level)
+        pg.draw.circle(mapscreen, "YELLOW", [aboba[2] * mapscale, aboba[3] * mapscale], 10)
+        pg.draw.circle(mapscreen, "GREEN", [aboba[0] * mapscale, aboba[1] * mapscale], 10)
+
+        pg.draw.circle(mapscreen, "RED", enemy.coord * mapscale, 5)
+
+
+
+
         screen.blit(mapscreen, [0.5 * (width - height), 0])
     elif MODE == "3D":
         for beam in BEAMS:
@@ -385,12 +445,7 @@ while not finished:
 
     if MODE == "3D":
         Shotgun.draw(screen, shooting)
-    
+
     pg.display.update()
 
-            
-
 pg.quit()
-
-
-    
