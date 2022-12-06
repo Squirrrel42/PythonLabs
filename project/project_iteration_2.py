@@ -3,6 +3,8 @@ import pygame as pg
 import numpy as np
 from textures import *
 from ray_module import *
+from weapons import *
+from random import random
 import time
 
 width = 1200
@@ -17,6 +19,7 @@ wall_height = 48
 len0 = len(TEXTURES)
 colors = ["BLACK", "WHITE", "GREEN", "RED", "RED", "WHITE", "BLUE", "GREEN"]
 BEAMS = []
+Shotgun = Weapon()
 
 def new_texture(size):
     a = []
@@ -361,10 +364,13 @@ while not finished:
             elif MODE == "3D":
                 texdraw(screen, ver_cell[1], TEXTURES[ver_cell[0]], wall_height / mag(ver_vec) / np.cos(offset) * scale, [(offset + fov_rad / 2) * scale, height / 2], int(width / rays_number) + 1, 0.5)
     
-    #Code for the laser pointer
-    if shooting:
-        BEAMS.append(Beam(
-            Level, [obs.coord[0] + 3 * np.cos(obs.ang + 2), obs.coord[1] + 3 * np.sin(obs.ang + 2)], obs.ang, 300, 3000, 500, 30))
+    #Code for the laser shotgun
+    if MODE == "3D":
+        if Shotgun.state == 1:
+            for i in range(5):
+                BEAMS.append(Beam(
+                        Level, [obs.coord[0] + 5 * np.cos(obs.ang), obs.coord[1] + 5 * np.sin(obs.ang)], obs.ang + (0.5 - random()) * 0.3, 300, 1300, 500, 30
+                ))
     if MODE == "Map":
         pg.draw.circle(mapscreen, pcol, obs.coord * mapscale, 5)
         screen.blit(mapscreen, [0.5 * (width - height), 0])
@@ -376,6 +382,10 @@ while not finished:
         if beam.timer > 0.2:
             BEAMS.remove(beam)
             del beam
+
+    if MODE == "3D":
+        Shotgun.draw(screen, shooting)
+    
     pg.display.update()
 
             
